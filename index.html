@@ -36,18 +36,39 @@ const ctx = canvas.getContext("2d");
 const bgmBtn = document.getElementById("bgmBtn");
 
 // =====================
-// 🔊 サウンド
+// 🔊 Audio（GitHub対応）
 // =====================
+let audioUnlocked = false;
+let audioCtx;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioUnlocked = true;
+}
+
+function playSE(src, volume = 1) {
+  if (!audioUnlocked) return;
+
+  fetch(src)
+    .then(res => res.arrayBuffer())
+    .then(buf => audioCtx.decodeAudioData(buf))
+    .then(decoded => {
+      const source = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      gain.gain.value = volume;
+
+      source.buffer = decoded;
+      source.connect(gain).connect(audioCtx.destination);
+      source.start();
+    });
+}
+
+// BGM
 const bgm = new Audio("ゆったりお散歩.mp3");
 bgm.loop = true;
 bgm.volume = 0.4;
 let bgmOn = false;
-
-function playSE(src, volume = 1) {
-  const se = new Audio(src);
-  se.volume = volume;
-  se.play();
-}
 
 // =====================
 // ゲーム状態
@@ -83,9 +104,8 @@ const sushiTypes = [
 ];
 
 sushiTypes.forEach(s => {
-  const img = new Image();
-  img.src = s.src;
-  s.img = img;
+  s.img = new Image();
+  s.img.src = s.src;
 });
 
 function randomSushi() {
@@ -112,7 +132,6 @@ const successRange = 22;
 // =====================
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   ctx.font = "15px monospace";
 
   // 成功ゾーン
@@ -146,6 +165,7 @@ function draw() {
     ctx.drawImage(currentSushi.img, sushi.x - 16, sushi.y - 16, 32, 32);
   }
 
+  // UI
   if (gameState === "start") {
     ctx.fillText("クリック①：寿司が進む", 120, 50);
     ctx.fillText("クリック②：ブレーキ！", 120, 70);
@@ -196,10 +216,13 @@ function judge() {
 // =====================
 // 操作
 // =====================
-function action() {
+canvas.addEventListener("click", () => {
+  unlockAudio();
+
   if (gameState === "start") {
     gameState = "playing";
     speech = "いきますし…";
+    if (bgmOn && bgm.paused) bgm.play();
     return;
   }
 
@@ -217,9 +240,7 @@ function action() {
     sushi.speed *= currentSushi.brake;
     speech = "とまれですし…！";
   }
-}
-
-canvas.addEventListener("click", action);
+});
 
 // =====================
 // BGM
@@ -240,6 +261,7 @@ function reset() {
   isSurprised = false;
   showSuccessImg = false;
   speech = "…";
+  message = "";
   currentSushi = randomSushi();
   gameState = "start";
 }
