@@ -26,7 +26,7 @@
 <body>
 
 <h2 style="color:#3b2a1a">🍣 あちらのお客様からですし！ 🍣</h2>
-<button id="bgmBtn">BGM ON</button>
+<button id="bgmBtn">BGM OFF</button>
 
 <canvas id="game" width="640" height="220"></canvas>
 
@@ -36,39 +36,19 @@ const ctx = canvas.getContext("2d");
 const bgmBtn = document.getElementById("bgmBtn");
 
 // =====================
-// 🔊 Audio（GitHub対応）
+// 🔊 Audio（最強安定）
 // =====================
-let audioUnlocked = false;
-let audioCtx;
-
-function unlockAudio() {
-  if (audioUnlocked) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  audioUnlocked = true;
-}
-
 function playSE(src, volume = 1) {
-  if (!audioUnlocked) return;
-
-  fetch(src)
-    .then(res => res.arrayBuffer())
-    .then(buf => audioCtx.decodeAudioData(buf))
-    .then(decoded => {
-      const source = audioCtx.createBufferSource();
-      const gain = audioCtx.createGain();
-      gain.gain.value = volume;
-
-      source.buffer = decoded;
-      source.connect(gain).connect(audioCtx.destination);
-      source.start();
-    });
+  const se = new Audio(src);
+  se.volume = volume;
+  se.play();
 }
 
-// BGM
+// BGM（デフォルトON）
 const bgm = new Audio("ゆったりお散歩.mp3");
 bgm.loop = true;
 bgm.volume = 0.4;
-let bgmOn = false;
+let bgmOn = true;
 
 // =====================
 // ゲーム状態
@@ -93,12 +73,12 @@ let isSurprised = false;
 let showSuccessImg = false;
 
 // =====================
-// 寿司ネタ
+// 寿司
 // =====================
 const sushiTypes = [
   { name: "いくら", src: "いくらのお寿司.png", speed: 7.5, brake: 0.35 },
-  { name: "うに",   src: "うにのお寿司.png",   speed: 8.0, brake: 0.38 },
-  { name: "えび",   src: "えびのお寿司.png",   speed: 7.2, brake: 0.33 },
+  { name: "うに", src: "うにのお寿司.png", speed: 8.0, brake: 0.38 },
+  { name: "えび", src: "えびのお寿司.png", speed: 7.2, brake: 0.33 },
   { name: "たまご", src: "たまごのお寿司.png", speed: 6.8, brake: 0.30 },
   { name: "まぐろ", src: "まぐろのお寿司.png", speed: 7.8, brake: 0.36 }
 ];
@@ -117,13 +97,7 @@ let currentSushi = randomSushi();
 // =====================
 // 寿司状態
 // =====================
-let sushi = {
-  x: 60,
-  y: 145,
-  speed: 0,
-  moving: false
-};
-
+let sushi = { x: 60, y: 145, speed: 0, moving: false };
 const customerX = 420;
 const successRange = 22;
 
@@ -132,15 +106,24 @@ const successRange = 22;
 // =====================
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = "15px monospace";
+  ctx.font = "16px monospace";
 
-  // 成功ゾーン
-  ctx.fillStyle = "rgba(100,200,120,0.25)";
-  ctx.fillRect(customerX - successRange, 130, successRange * 2, 40);
+  // 🥈 銀の皿（成功ゾーン）
+  ctx.save();
+  ctx.translate(customerX, 150);
+  ctx.scale(1.6, 0.6);
+  ctx.beginPath();
+  ctx.arc(0, 0, successRange, 0, Math.PI * 2);
+  ctx.fillStyle = "#dcdcdc";
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#999";
+  ctx.stroke();
+  ctx.restore();
 
   // セリフ
   ctx.fillStyle = "#2b1d12";
-  ctx.fillText(speech, 10, 20);
+  ctx.fillText(speech, 10, 22);
 
   // カウンター
   ctx.fillStyle = "#c49a6c";
@@ -154,10 +137,14 @@ function draw() {
 
   // 成功ロゴ
   if (showSuccessImg && successImg.complete) {
-    const scale = 0.25;
-    const w = successImg.width * scale;
-    const h = successImg.height * scale;
-    ctx.drawImage(successImg, customerX - w / 2, 5, w, h);
+    const scale = 0.2;
+    ctx.drawImage(
+      successImg,
+      customerX - successImg.width * scale / 2,
+      5,
+      successImg.width * scale,
+      successImg.height * scale
+    );
   }
 
   // 寿司
@@ -167,14 +154,14 @@ function draw() {
 
   // UI
   if (gameState === "start") {
-    ctx.fillText("クリック①：寿司が進む", 120, 50);
-    ctx.fillText("クリック②：ブレーキ！", 120, 70);
-    ctx.fillText("▶ クリックでスタートですし！", 130, 100);
+    ctx.fillText("クリック①：寿司が進む", 120, 55);
+    ctx.fillText("クリック②：ブレーキ！", 120, 75);
+    ctx.fillText("▶ クリックでスタートですし！", 130, 105);
   }
 
   if (gameState === "result") {
     ctx.fillText(message, 120, 95);
-    ctx.fillText("▶ クリックで、もう一回ですし！", 130, 120);
+    ctx.fillText("▶ クリックで、もう一回ですし！", 120, 120);
   }
 }
 
@@ -217,8 +204,6 @@ function judge() {
 // 操作
 // =====================
 canvas.addEventListener("click", () => {
-  unlockAudio();
-
   if (gameState === "start") {
     gameState = "playing";
     speech = "いきますし…";
@@ -243,7 +228,7 @@ canvas.addEventListener("click", () => {
 });
 
 // =====================
-// BGM
+// BGMボタン
 // =====================
 bgmBtn.onclick = () => {
   bgmOn = !bgmOn;
