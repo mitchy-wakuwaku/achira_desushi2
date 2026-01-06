@@ -105,7 +105,7 @@
 
   <img id="sushi" />
   <div id="plate"></div>
-  <img id="girl" src="女の子.png" />
+  <img id="girl" src="girl.png" />
   <img id="logo" src="GinxDOTOWN.png" />
 
   <div id="counter"></div>
@@ -116,7 +116,7 @@
 
 <script>
 /* ========= サウンド ========= */
-const bgm = new Audio("ゆったりお散歩.mp3");
+const bgm = new Audio("bgm.mp3");
 bgm.loop = true;
 bgm.volume = 0.4;
 
@@ -138,11 +138,11 @@ const bgmBtn = document.getElementById("bgmBtn");
 
 /* ========= 寿司 ========= */
 const sushiImages = [
-  "いくらのお寿司.png",
-  "うにのお寿司.png",
-  "えびのお寿司.png",
-  "たまごのお寿司.png",
-  "まぐろのお寿司.png"
+  "sushi_ikura.png",
+  "sushi_uni.png",
+  "sushi_ebi.png",
+  "sushi_tamago.png",
+  "sushi_maguro.png"
 ];
 
 /* ========= 状態 ========= */
@@ -164,7 +164,7 @@ function resetGame() {
   sushi.src = sushiImages[Math.floor(Math.random() * sushiImages.length)];
   sushi.style.left = "0px";
 
-  girl.src = "女の子.png";
+  girl.src = "girl.png";
   logo.style.display = "none";
 
   message.textContent = "クリックでシューですし！";
@@ -193,12 +193,12 @@ function finish(success) {
   isFinished = true;
 
   if (success) {
-    playSE("パフパフパフパフパフ1.mp3");
-    girl.src = "びっくりした女の子.png";
+    playSE("se_win.mp3");
+    girl.src = "girl_surprise.png";
     logo.style.display = "block";
     result.textContent = "成功ですし！！🎉";
   } else {
-    playSE("ガーン.mp3");
+    playSE("se_fail.mp3");
     result.textContent = "失敗ですし…💦";
   }
 
@@ -211,7 +211,7 @@ document.addEventListener("click", () => {
   if (bgm.paused) bgm.play();
 
   if (!isPlaying && !isFinished) {
-    playSE("スライドホイッスル下降2.mp3");
+    playSE("se_shu.mp3");
     isPlaying = true;
     message.textContent = "シューーーですし！";
     loop();
