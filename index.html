@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>あちらのお客様からですし！</title>
+<style>
+  body {
+    background: #e0d6c3;
+    font-family: monospace;
+    text-align: center;
+  }
+  canvas {
+    background: #f4efe6;
+    border: 4px solid #3b2a1a;
+    margin-top: 10px;
+  }
+  #bgmBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h2 style="color:#3b2a1a">🍣 あちらのお客様からですし！ 🍣</h2>
+<button id="bgmBtn">BGM OFF</button>
+
+<canvas id="game" width="640" height="220"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const bgmBtn = document.getElementById("bgmBtn");
+
+// =====================
+// 🔊 サウンド
+// =====================
+const bgm = new Audio("ゆったりお散歩.mp3");
+bgm.loop = true;
+bgm.volume = 0.4;
+let bgmOn = true;
+
+const seSlide = new Audio("スライドホイッスル下降2.mp3");
+const seFail  = new Audio("ガーン.mp3");
+const seWin   = new Audio("パフパフパフパフパフ1.mp3");
+
+function playSE(audio) {
+  const se = audio.cloneNode();
+  se.volume = audio.volume;
+  se.play();
+}
+
+// =====================
+// ゲーム状態
+// =====================
+let gameState = "start";
+let speech = "…";
+
+// =====================
+// 画像
+// =====================
+const girlNormal = new Image();
+girlNormal.src = "女の子.png";
+const girlSurprise = new Image();
+girlSurprise.src = "びっくりした女の子.png";
+
+const successImg = new Image();
+successImg.src = "GinxDOTOWN.png";
+
+let isSurprised = false;
+let showSuccessImg = false;
+
+// =====================
+// 寿司ネタ
+// =====================
+const sushiTypes = [
+  { name: "いくら", src: "いくらのお寿司.png", speed: 7.5, brake: 0.35 },
+  { name: "うに",   src: "うにのお寿司.png",   speed: 8.0, brake: 0.38 },
+  { name: "えび",   src: "えびのお寿司.png",   speed: 7.2, brake: 0.33 },
+  { name: "たまご", src: "たまごのお寿司.png", speed: 6.8, brake: 0.30 },
+  { name: "まぐろ", src: "まぐろのお寿司.png", speed: 7.8, brake: 0.36 }
+];
+
+sushiTypes.forEach(s => {
+  const img = new Image();
+  img.src = s.src;
+  s.img = img;
+});
+
+function randomSushi() {
+  return sushiTypes[Math.floor(Math.random() * sushiTypes.length)];
+}
+
+let currentSushi = randomSushi();
+
+// =====================
+// 寿司状態
+// =====================
+let sushi = {
+  x: 60,
+  y: 145,
+  speed: 0,
+  moving: false
+};
+
+const customerX = 420;
+const successRange = 22;
+let message = "";
+
+// =====================
+// 描画
+// =====================
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // フォント指定
+  ctx.font = "15px monospace";
+
+  // 成功ゾーン
+  ctx.fillStyle = "rgba(100,200,120,0.25)";
+  ctx.fillRect(customerX - successRange, 130, successRange * 2, 40);
+
+  // セリフ
+  ctx.fillStyle = "#2b1d12";
+  ctx.fillText(speech, 10, 20);
+
+  // カウンター
+  ctx.fillStyle = "#c49a6c";
+  ctx.fillRect(0, 170, canvas.width, 20);
+
+  // 女の子
+  const girlImg = isSurprised ? girlSurprise : girlNormal;
+  ctx.drawImage(girlImg, customerX - 32, 60, 64, 64);
+
+  // 成功画像
+  if (showSuccessImg) {
+    const scale = 0.2; // 表示サイズ調整（好みで）
+    const w = successImg.width * scale;
+    const h = successImg.height * scale;
+    ctx.drawImage(
+      successImg,
+      customerX - w / 2,
+      10,
+      w,
+      h
+    );
+  }
+
+  // 寿司
+  ctx.drawImage(currentSushi.img, sushi.x - 16, sushi.y - 16, 32, 32);
+
+  if (gameState === "start") {
+    ctx.fillText("クリック①：寿司が進む", 120, 50);
+    ctx.fillText("クリック②：ブレーキ！", 120, 70);
+    ctx.fillText("▶ クリックでスタートですし！", 130, 100);
+  }
+
+  if (gameState === "result") {
+    ctx.font = "15px monospace";
+    ctx.fillStyle = "#2b1d12";
+    ctx.fillText(message, 120, 95);
+    ctx.fillText("▶ クリックで、もう一回ですし！", 130, 120);
+  }
+}
+
+// =====================
+// 更新
+// =====================
+function update() {
+  if (gameState !== "playing") return;
+
+  if (sushi.moving) {
+    sushi.x += sushi.speed;
+    sushi.speed *= 0.985;
+
+    if (sushi.speed < 0.15) {
+      sushi.moving = false;
+      judge();
+    }
+  }
+}
+
+// =====================
+// 判定
+// =====================
+function judge() {
+  const dist = Math.abs(sushi.x - customerX);
+  gameState = "result";
+
+  if (dist < successRange) {
+    isSurprised = true;
+    showSuccessImg = true;
+    message = `😳 ${currentSushi.name}ですし！？`;
+    speech = "ナイスですし！";
+    playSE(seWin);
+  } else {
+    message = "😂 失敗ですし！";
+    speech = "行きすぎですし〜！";
+    playSE(seFail);
+  }
+}
+
+// =====================
+// 操作
+// =====================
+function action() {
+  if (gameState === "start") {
+    if (bgmOn && bgm.paused) bgm.play();
+    gameState = "playing";
+    speech = "いきますし…";
+    return;
+  }
+
+  if (gameState === "result") {
+    reset();
+    return;
+  }
+
+  if (!sushi.moving) {
+    sushi.speed = currentSushi.speed;
+    sushi.moving = true;
+    speech = "シューッですし！！";
+    playSE(seSlide);
+  } else {
+    sushi.speed *= currentSushi.brake;
+    speech = "とまれですし…！";
+  }
+}
+
+canvas.addEventListener("click", action);
+
+// =====================
+// BGMボタン
+// =====================
+bgmBtn.onclick = () => {
+  bgmOn = !bgmOn;
+  bgmBtn.textContent = bgmOn ? "BGM OFF" : "BGM ON";
+  bgmOn ? bgm.play() : bgm.pause();
+};
+
+// =====================
+// リセット
+// =====================
+function reset() {
+  sushi.x = 60;
+  sushi.speed = 0;
+  sushi.moving = false;
+  isSurprised = false;
+  showSuccessImg = false;
+  speech = "…";
+  currentSushi = randomSushi();
+  gameState = "start";
+}
+
+// =====================
+// ループ
+// =====================
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
