@@ -184,10 +184,12 @@ function update() {
 // 判定
 // =====================
 function judge() {
-  const dist = Math.abs(sushi.x - customerX);
   gameState = "result";
 
-  if (dist < successRange) {
+  const plateRadiusX = successRange * 1.6; // 銀の皿の横半径
+  const distX = Math.abs(sushi.x - customerX);
+
+  if (distX < plateRadiusX) {
     isSurprised = true;
     showSuccessImg = true;
     message = `😳 ${currentSushi.name}ですし！？`;
@@ -195,7 +197,9 @@ function judge() {
     playSE("se_win.mp3");
   } else {
     message = "😂 失敗ですし！";
-    speech = "行きすぎですし〜！";
+    speech = sushi.x < customerX
+      ? "手前ですし〜！"
+      : "行きすぎですし〜！";
     playSE("se_fail.mp3");
   }
 }
