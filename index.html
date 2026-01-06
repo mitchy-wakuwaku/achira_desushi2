@@ -26,7 +26,7 @@
 <body>
 
 <h2 style="color:#3b2a1a">🍣 あちらのお客様からですし！ 🍣</h2>
-<button id="bgmBtn">BGM OFF</button>
+<button id="bgmBtn">BGM ON</button>
 
 <canvas id="game" width="640" height="220"></canvas>
 
@@ -41,15 +41,11 @@ const bgmBtn = document.getElementById("bgmBtn");
 const bgm = new Audio("ゆったりお散歩.mp3");
 bgm.loop = true;
 bgm.volume = 0.4;
-let bgmOn = true;
+let bgmOn = false;
 
-const seSlide = new Audio("スライドホイッスル下降2.mp3");
-const seFail  = new Audio("ガーン.mp3");
-const seWin   = new Audio("パフパフパフパフパフ1.mp3");
-
-function playSE(audio) {
-  const se = audio.cloneNode();
-  se.volume = audio.volume;
+function playSE(src, volume = 1) {
+  const se = new Audio(src);
+  se.volume = volume;
   se.play();
 }
 
@@ -58,12 +54,14 @@ function playSE(audio) {
 // =====================
 let gameState = "start";
 let speech = "…";
+let message = "";
 
 // =====================
 // 画像
 // =====================
 const girlNormal = new Image();
 girlNormal.src = "女の子.png";
+
 const girlSurprise = new Image();
 girlSurprise.src = "びっくりした女の子.png";
 
@@ -108,7 +106,6 @@ let sushi = {
 
 const customerX = 420;
 const successRange = 22;
-let message = "";
 
 // =====================
 // 描画
@@ -116,7 +113,6 @@ let message = "";
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // フォント指定
   ctx.font = "15px monospace";
 
   // 成功ゾーン
@@ -133,24 +129,22 @@ function draw() {
 
   // 女の子
   const girlImg = isSurprised ? girlSurprise : girlNormal;
-  ctx.drawImage(girlImg, customerX - 32, 60, 64, 64);
+  if (girlImg.complete) {
+    ctx.drawImage(girlImg, customerX - 32, 60, 64, 64);
+  }
 
-  // 成功画像
-  if (showSuccessImg) {
-    const scale = 0.2; // 表示サイズ調整（好みで）
+  // 成功ロゴ
+  if (showSuccessImg && successImg.complete) {
+    const scale = 0.25;
     const w = successImg.width * scale;
     const h = successImg.height * scale;
-    ctx.drawImage(
-      successImg,
-      customerX - w / 2,
-      10,
-      w,
-      h
-    );
+    ctx.drawImage(successImg, customerX - w / 2, 5, w, h);
   }
 
   // 寿司
-  ctx.drawImage(currentSushi.img, sushi.x - 16, sushi.y - 16, 32, 32);
+  if (currentSushi.img.complete) {
+    ctx.drawImage(currentSushi.img, sushi.x - 16, sushi.y - 16, 32, 32);
+  }
 
   if (gameState === "start") {
     ctx.fillText("クリック①：寿司が進む", 120, 50);
@@ -159,8 +153,6 @@ function draw() {
   }
 
   if (gameState === "result") {
-    ctx.font = "15px monospace";
-    ctx.fillStyle = "#2b1d12";
     ctx.fillText(message, 120, 95);
     ctx.fillText("▶ クリックで、もう一回ですし！", 130, 120);
   }
@@ -170,9 +162,7 @@ function draw() {
 // 更新
 // =====================
 function update() {
-  if (gameState !== "playing") return;
-
-  if (sushi.moving) {
+  if (gameState === "playing" && sushi.moving) {
     sushi.x += sushi.speed;
     sushi.speed *= 0.985;
 
@@ -195,11 +185,11 @@ function judge() {
     showSuccessImg = true;
     message = `😳 ${currentSushi.name}ですし！？`;
     speech = "ナイスですし！";
-    playSE(seWin);
+    playSE("パフパフパフパフパフ1.mp3");
   } else {
     message = "😂 失敗ですし！";
     speech = "行きすぎですし〜！";
-    playSE(seFail);
+    playSE("ガーン.mp3");
   }
 }
 
@@ -208,7 +198,6 @@ function judge() {
 // =====================
 function action() {
   if (gameState === "start") {
-    if (bgmOn && bgm.paused) bgm.play();
     gameState = "playing";
     speech = "いきますし…";
     return;
@@ -223,7 +212,7 @@ function action() {
     sushi.speed = currentSushi.speed;
     sushi.moving = true;
     speech = "シューッですし！！";
-    playSE(seSlide);
+    playSE("スライドホイッスル下降2.mp3");
   } else {
     sushi.speed *= currentSushi.brake;
     speech = "とまれですし…！";
@@ -233,7 +222,7 @@ function action() {
 canvas.addEventListener("click", action);
 
 // =====================
-// BGMボタン
+// BGM
 // =====================
 bgmBtn.onclick = () => {
   bgmOn = !bgmOn;
